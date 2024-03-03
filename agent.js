@@ -1,6 +1,13 @@
 const Msg = require('./msg')
 const readline = require('readline')
 const Flags = require('./flags')
+const { log } = require('console')
+const actions = [
+	{ act: 'flag', fl: 'gl' },
+	{ act: 'flag', fl: 'frb' },
+	{ act: 'kick', fl: 'b', goal: 'gr' },
+	{ act: 'flag', fl: 'fc' },
+]
 
 const round = a => Math.round(a * 100) / 100
 
@@ -16,6 +23,7 @@ class Agent {
 		})
 		this.team = team
 		this.strat = strat
+		this.indexOfAct = 0
 
 		this.rl.on('line', input => {
 			// Обработка строки из кон—
@@ -49,7 +57,7 @@ class Agent {
 		let data = Msg.parseMsg(msg) // Разбор сообщения
 		if (!data) throw new Error('Parse error\n' + msg)
 		// Первое (hear) — начало игры
-		if (data.cmd == 'hear') this.run = true
+		if (data.cmd == 'hear' && data.p[2] == 'play_on') this.run = true
 		if (data.cmd == 'init') this.initAgent(data.p) //MHMnmaflM3auMH
 		this.analyzeEnv(data.msg, data.cmd, data.p) // Обработка
 	}
@@ -60,30 +68,76 @@ class Agent {
 	analyzeEnv(msg, cmd, p) {
 		// Анализ сообщения
 		if (cmd === 'see') {
-			if (this.strat && this.strat.name === 'spin' && p[0] > 100) {
-				this.act = { n: 'turn', v: this.strat.speed }
-			}
-			console.log('---------------------------------------------------')
-
 			const observedFlags = []
+			const allFlags = []
+			const allNamesFlags = []
+			const observedNamesFlags = []
 			const opponents = []
-
+			let isViewBall = false
 			const xs = []
 			for (let i = 1; i < p.length; i++) {
 				let flagName = p[i].cmd.p.join('')
 				if (Object.keys(Flags).includes(flagName) && p[i].p.length >= 2) {
+					allFlags.push(p[i])
+					allNamesFlags.push(flagName)
 					// Flag
 					let x = Flags[flagName].x
 					if (!xs.includes(x)) {
 						observedFlags.push(p[i])
+						observedNamesFlags.push(flagName)
 						xs.push(x)
 					}
 				} else if (p[i].cmd.p[0] === 'p' && p[i].cmd.p[1] !== this.team) {
 					// Opponent
 					opponents.push(p[i])
+				} else if (p[i].cmd.p[0] === 'b') {
+					isViewBall = true
+					// Ball
+					if (this.strat === 'kick') {
+						const distanseBall = p[i].p[0]
+						const angleBall = p[i].p[1]
+
+						if (!angleBall) {
+							this.act = { n: 'turn', v: -angleBall }
+						}
+						if (distanseBall < 0.5) {
+							this.act = { n: 'kick', v: '100 4' }
+						} else {
+							this.act = { n: 'dash', v: 100 }
+						}
+					}
 				}
 			}
 
+			this.strat = actions[this.indexOfAct].act
+			// act with ball
+			if (this.strat === 'kick' && !isViewBall) {
+				this.act = { n: 'turn', v: 90 }
+			}
+
+			// act with flags
+			const indexViewFlag = allNamesFlags.indexOf(actions[this.indexOfAct].fl)
+
+			if (this.strat === 'flag' && indexViewFlag === -1) {
+				this.act = { n: 'turn', v: 90 }
+			}
+			if (indexViewFlag !== -1) {
+				const distanseFlag = allFlags[indexViewFlag].p[0]
+				const angleFlag = allFlags[indexViewFlag].p[1]
+				if (!angleFlag) {
+					this.act = {
+						n: 'turn',
+						v: -angleFlag,
+					}
+				}
+				if (distanseFlag > 3) {
+					this.act = { n: 'dash', v: 100 }
+				} else {
+					this.indexOfAct++
+				}
+			}
+
+			//evelon192
 			if (observedFlags.length < 3) {
 				console.log('В зоне видимости нет трех флагов')
 				return
@@ -100,6 +154,7 @@ class Agent {
 					observedFlag.p[1],
 				]
 			}
+			const extractFlagName = observedFlag => observedFlag.cmd.p.join('')
 
 			const [x1, y1, d1, alpha1] = extractFlagCoordsAndDistance(
 				observedFlags[0]
@@ -112,9 +167,9 @@ class Agent {
 			)
 			const [X, Y] = this.calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3)
 
-			console.log(
-				`${this.id} игрок команды ${this.team}: X = ${round(X)} Y = ${round(Y)}`
-			)
+			// console.log(
+			// 	`${this.id} игрок команды ${this.team}: X = ${round(X)} Y = ${round(Y)}`
+			// )
 
 			// Opponent
 			if (opponents.length) {
@@ -141,14 +196,15 @@ class Agent {
 					Y,
 					da
 				)
-				console.log(
-					`${this.id} игрок команды ${this.team} видит игрока команды ${
-						opponents[0].cmd.p[1]
-					}: X = ${round(XO)} Y = ${round(YO)}`
-				)
+				// console.log(
+				// 	`${this.id} игрок команды ${this.team} видит игрока команды ${
+				// 		opponents[0].cmd.p[1]
+				// 	}: X = ${round(XO)} Y = ${round(YO)}`
+				// )
 			}
 		}
 	}
+
 	calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3) {
 		const alpha1 = (y1 - y2) / (x2 - x1)
 		const beta1 =

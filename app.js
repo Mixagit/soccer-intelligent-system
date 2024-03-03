@@ -24,22 +24,20 @@ async function getUserInput(prompt) {
 ;(async () => {
 	let c1, c2, s
 
-	if (INPUT) {
+	if (!INPUT) {
 		c1 = await getUserInput('First player coordinates (x y):')
 		c2 = await getUserInput('Second player coordinates (x y):')
 		s = +(await getUserInput('First player rotation speed (s):'))
 	} else {
-		;[c1, c2, s] = [[-15, 0], [5, 10], 20]
+		;[c1, c2, s] = [[-20, -5], [5, 10], 20]
 	}
 
-	console.log('kekaaaaa', [c1, c2, s])
-
 	let pA1 = new Agent(teamNameA, { name: 'spin', speed: s })
-	let pB1 = new Agent(teamNameB)
+	// let pB1 = new Agent(teamNameB)
 
 	await Socket(pA1, pA1.team, VERSION)
-	await Socket(pB1, pB1.team, VERSION)
+	// await Socket(pB1, pB1.team, VERSION)
 
 	await pA1.socketSend('move', `${c1[0]} ${c1[1]}`)
-	await pB1.socketSend('move', `${-c2[0]} ${-c2[1]}`)
+	// await pB1.socketSend('move', `${-c2[0]} ${-c2[1]}`)
 })()
