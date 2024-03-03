@@ -3,9 +3,9 @@ const readline = require('readline')
 const Flags = require('./flags')
 const { log } = require('console')
 const actions = [
+	{ act: 'kick', fl: 'b', goal: 'gr' },
 	{ act: 'flag', fl: 'gl' },
 	{ act: 'flag', fl: 'frb' },
-	{ act: 'kick', fl: 'b', goal: 'gr' },
 	{ act: 'flag', fl: 'fc' },
 ]
 
@@ -97,16 +97,38 @@ class Agent {
 						const distanseBall = p[i].p[0]
 						const angleBall = p[i].p[1]
 
-						if (!angleBall) {
-							this.act = { n: 'turn', v: -angleBall }
-						}
-						if (distanseBall < 0.5) {
-							this.act = { n: 'kick', v: '100 4' }
-						} else {
+						if (angleBall) {
+							this.act = { n: 'turn', v: angleBall }
+						} else if (distanseBall > 0.5) {
 							this.act = { n: 'dash', v: 100 }
+						} else {
+							// console.log('allFlags', allFlags)
+							const indexGate = allNamesFlags.indexOf(
+								actions[this.indexOfAct].goal
+							)
+							let angleGate = null
+							if (indexGate !== -1) {
+								for (let i = 0; i < allFlags.length; i++) {
+									if (this.extractFlagName(allFlags[i]) === 'gr') {
+										angleGate = allFlags[i].p[1]
+									}
+								}
+
+								console.log('angleGate', angleGate)
+								this.act = { n: 'kick', v: `100 ${angleGate}` }
+							} else {
+								this.act = { n: 'kick', v: `10 45` }
+							}
 						}
 					}
 				}
+			}
+
+			if (cmd == 'hear' && p[2].includes('goal')) {
+				this.run = false
+				console.log('GOAAAAAAAAAAAAAAAAAAAL')
+				if (curStrat.act == 'kick')
+					this.indexOfAct = (this.indexOfAct + 1) % this.actions.length
 			}
 
 			this.strat = actions[this.indexOfAct].act
@@ -124,13 +146,10 @@ class Agent {
 			if (indexViewFlag !== -1) {
 				const distanseFlag = allFlags[indexViewFlag].p[0]
 				const angleFlag = allFlags[indexViewFlag].p[1]
-				if (!angleFlag) {
-					this.act = {
-						n: 'turn',
-						v: -angleFlag,
-					}
-				}
-				if (distanseFlag > 3) {
+				console.log('angleFlag', angleFlag)
+				if (angleFlag) {
+					this.act = { n: 'turn', v: angleFlag }
+				} else if (distanseFlag > 3) {
 					this.act = { n: 'dash', v: 100 }
 				} else {
 					this.indexOfAct++
@@ -154,7 +173,6 @@ class Agent {
 					observedFlag.p[1],
 				]
 			}
-			const extractFlagName = observedFlag => observedFlag.cmd.p.join('')
 
 			const [x1, y1, d1, alpha1] = extractFlagCoordsAndDistance(
 				observedFlags[0]
@@ -173,7 +191,6 @@ class Agent {
 
 			// Opponent
 			if (opponents.length) {
-				// console.log('opponents', opponents)
 				const [da, alphaa] = [opponents[0].p[0], opponents[0].p[1]]
 				const da1 = Math.sqrt(
 					d1 * d1 +
@@ -204,7 +221,9 @@ class Agent {
 			}
 		}
 	}
-
+	extractFlagName(observedFlag) {
+		return observedFlag.cmd.p.join('')
+	}
 	calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3) {
 		const alpha1 = (y1 - y2) / (x2 - x1)
 		const beta1 =
@@ -222,15 +241,8 @@ class Agent {
 	}
 	sendCmd() {
 		if (this.run) {
-			// Идра начата
-			if (this.act) {
-				// Есть команда от игрока
-				if (this.act.n == 'kick')
-					// Пнуть мяч
-					this.socketSend(this.act.n, this.act.v + ' 0')
-				// ДВижение и поворот
-				else this.socketSend(this.act.n, this.act.v)
-			}
+			// Игра начата
+			if (this.act) this.socketSend(this.act.n, this.act.v)
 			this.act = null // Сброс команды
 		}
 	}
