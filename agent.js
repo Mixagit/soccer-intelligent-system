@@ -66,6 +66,12 @@ class Agent {
 		if (p[1]) this.id = p[1] // id игрока
 	}
 	analyzeEnv(msg, cmd, p) {
+		if (cmd == 'hear' && p[2].includes('goal')) {
+			this.run = false
+			console.log('GOAAAAAAAAAAAAAAAAAAAL')
+			if (this.strat == 'kick')
+				this.indexOfAct = (this.indexOfAct + 1) % actions.length
+		}
 		// Анализ сообщения
 		if (cmd === 'see') {
 			const observedFlags = []
@@ -114,7 +120,7 @@ class Agent {
 									}
 								}
 
-								console.log('angleGate', angleGate)
+								// console.log('angleGate', angleGate)
 								this.act = { n: 'kick', v: `100 ${angleGate}` }
 							} else {
 								this.act = { n: 'kick', v: `10 45` }
@@ -122,13 +128,6 @@ class Agent {
 						}
 					}
 				}
-			}
-
-			if (cmd == 'hear' && p[2].includes('goal')) {
-				this.run = false
-				console.log('GOAAAAAAAAAAAAAAAAAAAL')
-				if (curStrat.act == 'kick')
-					this.indexOfAct = (this.indexOfAct + 1) % this.actions.length
 			}
 
 			this.strat = actions[this.indexOfAct].act
@@ -146,13 +145,13 @@ class Agent {
 			if (indexViewFlag !== -1) {
 				const distanseFlag = allFlags[indexViewFlag].p[0]
 				const angleFlag = allFlags[indexViewFlag].p[1]
-				console.log('angleFlag', angleFlag)
+				// console.log('angleFlag', angleFlag)
 				if (angleFlag) {
 					this.act = { n: 'turn', v: angleFlag }
 				} else if (distanseFlag > 3) {
 					this.act = { n: 'dash', v: 100 }
 				} else {
-					this.indexOfAct++
+					this.indexOfAct = (this.indexOfAct + 1) % actions.length
 				}
 			}
 
