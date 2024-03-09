@@ -3,10 +3,8 @@ const readline = require('readline')
 const Flags = require('./flags')
 const { log } = require('console')
 const actions = [
-	{ act: 'kick', fl: 'b', goal: 'gr' },
 	{ act: 'flag', fl: 'gl' },
-	{ act: 'flag', fl: 'frb' },
-	{ act: 'flag', fl: 'fc' },
+	{ act: 'kick', fl: 'b', goal: 'gr' },
 ]
 
 const round = a => Math.round(a * 100) / 100
@@ -81,17 +79,21 @@ class Agent {
 			const opponents = []
 			let isViewBall = false
 			const xs = []
+			const ys = []
 			for (let i = 1; i < p.length; i++) {
 				let flagName = p[i].cmd.p.join('')
+
 				if (Object.keys(Flags).includes(flagName) && p[i].p.length >= 2) {
 					allFlags.push(p[i])
 					allNamesFlags.push(flagName)
 					// Flag
 					let x = Flags[flagName].x
-					if (!xs.includes(x)) {
+					let y = Flags[flagName].y
+					if (!xs.includes(x) && ys.filter(el => y === el).length < 2) {
 						observedFlags.push(p[i])
 						observedNamesFlags.push(flagName)
 						xs.push(x)
+						ys.push(y)
 					}
 				} else if (p[i].cmd.p[0] === 'p' && p[i].cmd.p[1] !== this.team) {
 					// Opponent
@@ -184,9 +186,9 @@ class Agent {
 			)
 			const [X, Y] = this.calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3)
 
-			// console.log(
-			// 	`${this.id} игрок команды ${this.team}: X = ${round(X)} Y = ${round(Y)}`
-			// )
+			console.log(
+				`${this.id} игрок команды ${this.team}: X = ${round(X)} Y = ${round(Y)}`
+			)
 
 			// Opponent
 			if (opponents.length) {
