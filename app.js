@@ -2,7 +2,7 @@ const readline = require('readline')
 const Agent = require('./agent')
 const Socket = require('./socket')
 const VERSION = 7
-const INPUT = true
+const INPUT = false
 
 const teamNameA = 'A'
 const teamNameB = 'B'
@@ -24,7 +24,7 @@ async function getUserInput(prompt) {
 ;(async () => {
 	let c1, c2, s
 
-	if (!INPUT) {
+	if (INPUT) {
 		c1 = await getUserInput('First player coordinates (x y):')
 		c2 = await getUserInput('Second player coordinates (x y):')
 		s = +(await getUserInput('First player rotation speed (s):'))
@@ -32,7 +32,7 @@ async function getUserInput(prompt) {
 		;[c1, c2, s] = [[-20, -5], [5, 10], 20]
 	}
 
-	let pA1 = new Agent(teamNameA, { name: 'spin', speed: s })
+	let pA1 = new Agent(teamNameA)
 	// let pB1 = new Agent(teamNameB)
 
 	await Socket(pA1, pA1.team, VERSION)
