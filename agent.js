@@ -5,7 +5,7 @@ const Manager = require('./manager')
 const { DT } = require('./decisionTree')
 
 class Agent {
-	constructor(team, role = 'player') {
+	constructor(team, role = 'player', isLeader = false) {
 		this.position = 'l' // По умолчанию ~ левая половина поля
 		this.run = false // Игра начата
 		this.act = null // Действия
@@ -16,6 +16,8 @@ class Agent {
 		})
 		this.x = null
 		this.y = null
+		// this.leadershipDefined = false
+		this.isLeader = isLeader
 		this.team = team
 		this.role = role
 		this.indexOfAct = 0
@@ -61,8 +63,9 @@ class Agent {
 		this.dt = Object.create(DT[this.role]).init()
 	}
 	analyzeEnv(msg, cmd, p) {
-		if (this.team === 'teamB') return
+		// if (this.team === 'teamB') return
 		const mgr = Object.create(Manager).init(cmd, p, this.team, this.x, this.y)
+		mgr.isLeader = this.isLeader
 
 		if (mgr.stopRunning()) {
 			this.run = false
@@ -72,12 +75,19 @@ class Agent {
 		if (cmd == 'see') {
 			const pos = mgr.getLocation()
 			;[this.x, this.y] = [pos.x, pos.y]
-			// const teammate = mgr.getTeamLocationFirstPlayer()
-			// const opponent = mgr.getTeamLocationFirstPlayer(false)
+			const teammate = mgr.getTeamLocationFirstPlayer()
+			const opponent = mgr.getTeamLocationFirstPlayer(false)
 
-			// console.log(pos)
-			// console.log(teammate);
-			// console.log(opponent);
+			// if (this.leadershipDefined == false) {
+			// 	if (mgr.teammates.length < 1) {
+			// 		mgr.isLeader = true
+			// 		this.isLeader = true
+			// 		mgr.isLeader = true
+			// 	}
+			// 	this.leadershipDefined = true
+			// }
+			console.log('this.isLeader', this.isLeader)
+			console.log('this.pos', pos)
 
 			if (this.run) this.act = mgr.getAction(this.dt)
 		}

@@ -32,14 +32,18 @@ async function getUserInput(prompt) {
 		;[c1, c2, s] = [[-20, -5], [5, 10], 20]
 	}
 
-	let pA1 = new Agent(teamNameA, 'player')
+	// let pA1 = new Agent(teamNameA, 'player')
+	let pA1 = new Agent(teamNameA, 'groupPlayer', true)
+	let pA2 = new Agent(teamNameA, 'groupPlayer')
 	let pB1 = new Agent(teamNameB, 'goalkeeper')
 	// let pB1 = new Agent(teamNameB)
 
 	await Socket(pA1, pA1.team, VERSION)
+	await Socket(pA2, pA2.team, VERSION)
 	await Socket(pB1, pB1.team, VERSION, true)
 	// await Socket(pB1, pB1.team, VERSION)
 
 	await pA1.socketSend('move', `${c1[0]} ${c1[1]}`)
+	await pA2.socketSend('move', '-20 0')
 	await pB1.socketSend('move', `${-c2[0]} ${-c2[1]}`)
 })()
