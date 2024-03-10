@@ -1,17 +1,11 @@
 const Msg = require('./msg')
 const readline = require('readline')
-const Flags = require('./flags')
-const actions = [
-	{ act: 'flag', fl: 'gl' },
-	{ act: 'kick', fl: 'b', goal: 'gr' },
-]
-const { calculatePosition } = require('./calculations')
 
 const Manager = require('./manager')
 const { DT } = require('./decisionTree')
 
 class Agent {
-	constructor(team) {
+	constructor(team, role = 'player') {
 		this.position = 'l' // По умолчанию ~ левая половина поля
 		this.run = false // Игра начата
 		this.act = null // Действия
@@ -20,8 +14,10 @@ class Agent {
 			input: process.stdin,
 			output: process.stdout,
 		})
+		this.x = null
+		this.y = null
 		this.team = team
-		this.strat = null
+		this.role = role
 		this.indexOfAct = 0
 
 		this.rl.on('line', input => {
@@ -62,20 +58,20 @@ class Agent {
 	initAgent(p) {
 		if (p[0] == 'r') this.position = 'r' // Правая половина поля
 		if (p[1]) this.id = p[1] // id игрока
+		this.dt = Object.create(DT[this.role]).init()
 	}
 	analyzeEnv(msg, cmd, p) {
-		const dt = Object.create(DT)
-		const mgr = Object.create(Manager)
-
-		mgr.init(cmd, p, this.team)
+		if (this.team === 'teamB') return
+		const mgr = Object.create(Manager).init(cmd, p, this.team, this.x, this.y)
 
 		if (mgr.stopRunning()) {
 			this.run = false
-			dt.state.next = 0
+			this.dt.state.next = 0
 		}
 
 		if (cmd == 'see') {
 			const pos = mgr.getLocation()
+			;[this.x, this.y] = [pos.x, pos.y]
 			// const teammate = mgr.getTeamLocationFirstPlayer()
 			// const opponent = mgr.getTeamLocationFirstPlayer(false)
 
@@ -83,7 +79,7 @@ class Agent {
 			// console.log(teammate);
 			// console.log(opponent);
 
-			if (this.run) this.act = mgr.getAction(dt)
+			if (this.run) this.act = mgr.getAction(this.dt)
 		}
 	}
 

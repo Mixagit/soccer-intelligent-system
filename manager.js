@@ -1,10 +1,21 @@
 const Flags = require('./flags')
 const { calculatePosition } = require('./calculations')
+const { log } = require('console')
+
+const FL = 'flag',
+	KI = 'kick',
+	CA = 'catch'
+
+const goalkeeper = [
+	{ act: FL, fl: 'gr' },
+	{ act: CA, fl: 'b', goal: 'gl' },
+	{ act: KI, fl: 'b', goal: 'gl' },
+]
 
 const round = a => Math.round(a * 100) / 100
 
 const Manager = {
-	init(cmd, p, team) {
+	init(cmd, p, team, x, y) {
 		this.p = p
 		this.cmd = cmd
 		this.team = team
@@ -16,7 +27,7 @@ const Manager = {
 		this.observedFlagsNames = []
 		this.teammates = []
 		this.opponents = []
-		this.pos = null
+		this.pos = { x, y }
 		this.isViewBall = false
 
 		this.processEnv(cmd, p)
@@ -44,7 +55,7 @@ const Manager = {
 		if (cmd === 'see') {
 			const xs = []
 			const ys = []
-
+			// console.log('до цикла', this.observedFlags)
 			for (let i = 1; i < p.length; i++) {
 				let objName = p[i].cmd.p.join('')
 
@@ -92,13 +103,22 @@ const Manager = {
 			const [x3, y3, d3, alpha3] = this.extractFlagCoordsAndDistance(
 				this.isolatedObservedFlags[2]
 			)
-			const [X, Y] = calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3)
-			// console.log(
-			// 	`игрок команды ${this.team}: X = ${round(X)} Y = ${round(Y)}`
-			// )
-			this.pos = { X, Y }
+			const [x, y] = calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3)
+			console.log(`игрок команды ${this.team}: X = ${round(x)} Y = ${round(y)}`)
+			this.pos = { x, y }
+			// console.log('getLocation', this.pos)
 		}
 		return this.pos
+	},
+	inPenaltyZone(side = 'r') {
+		// console.log('inPenaltyZone', this.pos)
+		const { x, y } = this.pos
+		const { fprt, fprb, fplt, fplb } = Flags
+
+		return (
+			(side === 'r' && x > fprt.x && y > fprt.y && y < fprb.y) ||
+			(side === 'l' && x < fplt.x && y > fplt.y && y < fplb.y)
+		)
 	},
 	getTeamLocationFirstPlayer(ourTeam = true) {
 		if (this.isolatedObservedFlags.length >= 2) {
@@ -127,11 +147,11 @@ const Manager = {
 				)
 				const [XO, YO] = calculatePosition(x1, y1, da1, x2, y2, da2, X, Y, da)
 				pos = { x: XO, y: YO }
-				console.log(
-					`игрок команды ${this.team} видит игрока команды ${
-						this.opponents[0].cmd.p[1]
-					}: X = ${round(XO)} Y = ${round(YO)}`
-				)
+				// console.log(
+				// 	`игрок команды ${this.team} видит игрока команды ${
+				// 		this.opponents[0].cmd.p[1]
+				// 	}: X = ${round(XO)} Y = ${round(YO)}`
+				// )
 			}
 			return pos
 		} else return null
@@ -143,12 +163,28 @@ const Manager = {
 		return this.observedFlags[this.observedFlagsNames.indexOf(flagName)].p[0]
 	},
 	getAngle(flagName) {
+		// console.log(
+		// 	'ANGLEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE',
+		// 	this.observedFlags[this.observedFlagsNames.indexOf(flagName)].p[1]
+		// )
 		return this.observedFlags[this.observedFlagsNames.indexOf(flagName)].p[1]
+	},
+	getKickAngle(goal) {
+		// console.log('this.observedFlags', this.observedFlags)
+		// console.log('this.observedFlagsNames', this.observedFlagsNames)
+		let indexGates = this.observedFlagsNames.indexOf(goal)
+		if (indexGates !== -1) {
+			return this.observedFlags[indexGates].p[1]
+		} else {
+			console.log('Не вижу ворота')
+		}
+		return 180
 	},
 	stopRunning() {
 		return this.goal
 	},
 	getAction(dt) {
+		// if (this.team == 'B') console.log('Наталия', goalkeeper[dt.state.next])
 		const mgr = this
 		function execute(dt, title) {
 			const action = dt[title]
@@ -169,6 +205,7 @@ const Manager = {
 			}
 			throw new Error(`Unexpected node in DT: ${title}`)
 		}
+		// console.log('kekakkaekkafejksf')
 		return execute(dt, 'root')
 	},
 }
