@@ -19,6 +19,7 @@ class Agent {
 		// this.leadershipDefined = false
 		this.isLeader = isLeader
 		this.team = team
+		this.didHearGo = false
 		this.role = role
 		this.indexOfAct = 0
 
@@ -55,6 +56,7 @@ class Agent {
 		// Первое (hear) — начало игры
 		if (data.cmd == 'hear' && data.p[2] == 'play_on') this.run = true
 		if (data.cmd == 'init') this.initAgent(data.p) // Инициализация
+		if (data.cmd == 'hear' && data.p[2] == '"go"') this.didHearGo = true
 		this.analyzeEnv(data.msg, data.cmd, data.p) // Обработка
 	}
 	initAgent(p) {
@@ -62,14 +64,18 @@ class Agent {
 		if (p[1]) this.id = p[1] // id игрока
 		this.dt = Object.create(DT[this.role]).init()
 	}
-	analyzeEnv(msg, cmd, p) {
-		// if (this.team === 'teamB') return
+	async analyzeEnv(msg, cmd, p) {
 		const mgr = Object.create(Manager).init(cmd, p, this.team, this.x, this.y)
 		mgr.isLeader = this.isLeader
-
+		mgr.didHearGo = this.didHearGo
 		if (mgr.stopRunning()) {
+			this.dt.state.kickDone = false
+			this.dt.state.didHearGo = false
+			this.didHearGo = false
 			this.run = false
 			this.dt.state.next = 0
+			if (this.strat == 'passer') await this.socketSend('move', '-20 0')
+			if (this.strat == 'goaler') await this.socketSend('move', '-20 -20')
 		}
 
 		if (cmd == 'see') {
@@ -78,14 +84,6 @@ class Agent {
 			const teammate = mgr.getTeamLocationFirstPlayer()
 			const opponent = mgr.getTeamLocationFirstPlayer(false)
 
-			// if (this.leadershipDefined == false) {
-			// 	if (mgr.teammates.length < 1) {
-			// 		mgr.isLeader = true
-			// 		this.isLeader = true
-			// 		mgr.isLeader = true
-			// 	}
-			// 	this.leadershipDefined = true
-			// }
 			console.log('this.isLeader', this.isLeader)
 			console.log('this.pos', pos)
 

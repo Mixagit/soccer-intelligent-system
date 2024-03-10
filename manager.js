@@ -29,7 +29,7 @@ const Manager = {
 		this.opponents = []
 		this.pos = { x, y }
 		this.isLeader = false
-		this.isViewBall = false
+		this.didHearGo = false
 
 		this.processEnv(cmd, p)
 		return this
@@ -74,12 +74,11 @@ const Manager = {
 						ys.push(y)
 					}
 				} // Teammate
-				else if (
-					p[i].cmd.p[0] === 'p' &&
-					(p[i].cmd.p[1]
-						? p[i].cmd.p[1].replace(/"/gi, '') === this.team
-						: false)
-				) {
+				else if (p[i].cmd.p[0] === 'p') {
+					console.log('p[i].cmd', p[i].cmd)
+					if (p[i].cmd.p[1])
+						console.log('111111111111111', p[i].cmd.p[1].replace(/"/gi, ''))
+					console.log('2222222222222222', this.team)
 					this.teammates.push(p[i])
 				}
 				// Opponent
@@ -92,7 +91,7 @@ const Manager = {
 					this.ball = p[i]
 				}
 			}
-
+			// console.log('this.teammates', this.teammates)
 			this.isolatedObservedFlags.sort((a, b) => a.p[0] - b.p[0])
 		}
 	},
