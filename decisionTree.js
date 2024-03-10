@@ -50,9 +50,23 @@ const DT = {
 			trueCond: 'flagSeek',
 			falseCond: 'ballSeek',
 		},
+
+		runNearBall: {
+			exec(mgr, state) {
+				state.command = { n: 'dash', v: 10 }
+			},
+			next: 'sendCommand',
+		},
+
+		nearBall: {
+			condition: (mgr, state) => mgr.getDistance(state.action.fl) < 2,
+			trueCond: 'runNearBall',
+			falseCond: 'closeFlag',
+		},
+
 		flagSeek: {
-			condition: (mgr, state) => 3 > mgr.getDistance(state.action.fl),
-			trueCond: 'closeFlag',
+			condition: (mgr, state) => mgr.getDistance(state.action.fl) < 25,
+			trueCond: 'nearBall',
 			falseCond: 'farGoal',
 		},
 		closeFlag: {
@@ -63,7 +77,7 @@ const DT = {
 			next: 'goalVisible',
 		},
 		farGoal: {
-			condition: (mgr, state) => mgr.getAngle(state.action.fl) > 4,
+			condition: (mgr, state) => mgr.getAngle(state.action.fl) >= 2,
 			trueCond: 'rotateToGoal',
 			falseCond: 'runToGoal',
 		},
@@ -82,8 +96,9 @@ const DT = {
 		sendCommand: {
 			command: (mgr, state) => state.command,
 		},
+
 		ballSeek: {
-			condition: (mgr, state) => 0.5 > mgr.getDistance(state.action.fl),
+			condition: (mgr, state) => mgr.getDistance(state.action.fl) < 0.5,
 			trueCond: 'closeBall',
 			falseCond: 'farGoal',
 		},
@@ -201,11 +216,18 @@ const DT = {
 			trueCond: 'ballClose',
 			falseCond: 'stay',
 		},
+
+		rotateToBall: {
+			condition: (mgr, state) => mgr.getAngle(state.action.fl) > 2,
+			trueCond: 'rotateToGoal',
+			falseCond: 'runToGoal',
+		},
+
 		ballClose: {
 			condition: (mgr, state) =>
 				2 > mgr.getDistance(state.action.fl) && mgr.inPenaltyZone(),
 			trueCond: 'ballTooClose',
-			falseCond: 'runToGoal',
+			falseCond: 'rotateToBall',
 		},
 		ballTooClose: {
 			condition: (mgr, state) => 0.5 > mgr.getDistance(state.action.fl),
