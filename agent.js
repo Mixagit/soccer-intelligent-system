@@ -5,7 +5,7 @@ const Manager = require('./manager')
 const { DT } = require('./decisionTree')
 
 class Agent {
-	constructor(team, role = 'player', isLeader = false) {
+	constructor(team, coords, role, isLeader = false) {
 		this.position = 'l' // По умолчанию ~ левая половина поля
 		this.run = false // Игра начата
 		this.act = null // Действия
@@ -14,8 +14,8 @@ class Agent {
 			input: process.stdin,
 			output: process.stdout,
 		})
-		this.x = null
-		this.y = null
+		this.x = coords[0]
+		this.y =  coords[1]
 		// this.leadershipDefined = false
 		this.isLeader = isLeader
 		this.team = team
@@ -52,19 +52,22 @@ class Agent {
 	processMsg(msg) {
 		// Обработка сообщения
 		let data = Msg.parseMsg(msg) // Разбор сообщения
+
+		let goal = false;
+		
 		if (!data) throw new Error('Parse error\n' + msg)
 		// Первое (hear) — начало игры
 		if (data.cmd == 'hear' && data.p[2] == 'play_on') this.run = true
 		if (data.cmd == 'init') this.initAgent(data.p) // Инициализация
 		if (data.cmd == 'hear' && data.p[2] == '"go"') this.didHearGo = true
-		this.analyzeEnv(data.msg, data.cmd, data.p) // Обработка
+		this.analyzeEnv(data.msg, data.cmd, data.p, goal) // Обработка
 	}
 	initAgent(p) {
 		if (p[0] == 'r') this.position = 'r' // Правая половина поля
 		if (p[1]) this.id = p[1] // id игрока
 		this.dt = Object.create(DT[this.role]).init()
 	}
-	async analyzeEnv(msg, cmd, p) {
+	async analyzeEnv(msg, cmd, p, goal) {
 		const mgr = Object.create(Manager).init(cmd, p, this.team, this.x, this.y)
 		mgr.isLeader = this.isLeader
 		mgr.didHearGo = this.didHearGo
@@ -84,8 +87,8 @@ class Agent {
 			const teammate = mgr.getTeamLocationFirstPlayer()
 			const opponent = mgr.getTeamLocationFirstPlayer(false)
 
-			console.log('this.isLeader', this.isLeader)
-			console.log('this.pos', pos)
+			//console.log('this.isLeader', this.isLeader)
+			//console.log('this.pos', pos)
 
 			if (this.run) this.act = mgr.getAction(this.dt)
 		}

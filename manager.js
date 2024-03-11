@@ -35,7 +35,9 @@ const Manager = {
 		return this
 	},
 	extractFlagCoordsAndDistance(observedFlag) {
+
 		let flagName = observedFlag.cmd.p.join('')
+		//console.log(observedFlag, flagName)
 		return [
 			Flags[flagName].x,
 			Flags[flagName].y,
@@ -68,22 +70,35 @@ const Manager = {
 					let x = Flags[objName].x
 					let y = Flags[objName].y
 					if (!xs.includes(x) && ys.filter(el => y === el).length < 2) {
-						this.isolatedObservedFlags.push(p[i])
-						this.isolatedObservedFlagsNames.push(objName)
+					this.observedFlags.push(p[i])
+					this.observedFlagsNames.push(objName)
 						xs.push(x)
 						ys.push(y)
 					}
 				} // Teammate
-				else if (p[i].cmd.p[0] === 'p') {
-					console.log('p[i].cmd', p[i].cmd)
-					if (p[i].cmd.p[1])
-						console.log('111111111111111', p[i].cmd.p[1].replace(/"/gi, ''))
-					console.log('2222222222222222', this.team)
-					this.teammates.push(p[i])
+				else if (p[i].cmd.p[0] === 'p'){
+
+					if(p[i].cmd.p[1]){
+						if (p[i].cmd.p[1].replace(/"/gi, '') === this.team) {
+							this.teammates.push(p[i])
+					this.observedFlags.push(p[i])
+					this.observedFlagsNames.push(objName)
+						}
+					}
+						
+					
+					//console.log('p[i].cmd', p[i].cmd)
+					//if (p[i].cmd.p[1])
+						//console.log('111111111111111', p[i].cmd.p[1].replace(/"/gi, ''))
+					//console.log('2222222222222222', this.team)
+					
+
 				}
 				// Opponent
 				else if (p[i].cmd.p[0] === 'p' && p[i].cmd.p[1] !== this.team) {
 					this.opponents.push(p[i])
+					this.observedFlags.push(p[i])
+					this.observedFlagsNames.push(objName)
 				} //Ball
 				else if (p[i].cmd.p[0] === 'b') {
 					this.observedFlags.push(p[i])
@@ -97,7 +112,7 @@ const Manager = {
 	},
 	getLocation() {
 		if (this.isolatedObservedFlags.length < 3) {
-			console.log('В зоне видимости нет трех флагов')
+			//console.log('В зоне видимости нет трех флагов')
 		} else {
 			const [x1, y1, d1, alpha1] = this.extractFlagCoordsAndDistance(
 				this.isolatedObservedFlags[0]
@@ -167,6 +182,7 @@ const Manager = {
 	getDistance(flagName) {
 		return this.observedFlags[this.observedFlagsNames.indexOf(flagName)].p[0]
 	},
+
 	getAngle(flagName) {
 		// console.log(
 		// 	'ANGLEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE',

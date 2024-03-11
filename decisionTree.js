@@ -308,34 +308,34 @@ const DT = {
 		closeToLeader: {
 			condition: (mgr, state) =>
 				mgr.teammates[0].cmd.p[0] <= 1 &&
-				Math.abs(mgr.teammates[0].cmd.p[1]) < 40,
+				Math.abs(mgr.teammates[0].p[1]) < 40,
 			trueCond: 'rotate30',
 			falseCond: 'farToLeader',
 		},
 		farToLeader: {
-			condition: (mgr, state) => mgr.teammates[0].cmd.p[0] > 10,
+			condition: (mgr, state) => mgr.teammates[0].p[0] > 10,
 			trueCond: 'goToLeader',
 			falseCond: 'midDistToLeader',
 		},
 		midDistToLeader: {
 			condition: (mgr, state) =>
-				mgr.teammates[0].cmd.p[1] > 40 || mgr.teammates[0].cmd.p[1] < 25,
+				mgr.teammates[0].cmd.p[1] > 40 || mgr.teammates[0].p[1] < 25,
 			trueCond: 'rotateMinus30',
 			falseCond: 'midMidDistToLeader',
 		},
 		midMidDistToLeader: {
-			condition: (mgr, state) => mgr.teammates[0].cmd.p[0] < 7,
+			condition: (mgr, state) => mgr.teammates[0].p[0] < 7,
 			trueCond: 'dash20',
 			falseCond: 'dash40',
 		},
 		goToLeader: {
-			condition: (mgr, state) => Math.abs(mgr.teammates[0].cmd.p[1]) > 5,
+			condition: (mgr, state) => Math.abs(mgr.teammates[0].p[1]) > 5,
 			trueCond: 'rotateToLeader',
 			falseCond: 'runToGoal',
 		},
 		rotateToLeader: {
 			exec(mgr, state) {
-				state.command = { n: 'turn', v: mgr.teammates[0].cmd.p[1] }
+				state.command = { n: 'turn', v: mgr.teammates[0].p[1] }
 			},
 			next: 'sendCommand',
 		},
@@ -532,10 +532,7 @@ const DT = {
 			// 	state.command = { n: 'kick', v: `100 ${mgr.getKickAngle(state.action.goal)}` };
 			// },
 			// next: 'sendCommand',
-			condition: (mgr, state) => {
-				if (mgr.teammates.length > 0) return true
-				else return false
-			},
+			condition: (mgr, state) => mgr.teammates.length > 0,
 			trueCond: 'ballGoalVisible',
 			falseCond: 'ballGoalInvisible',
 		},
@@ -544,9 +541,8 @@ const DT = {
 				state.kickDone = true
 				state.command = {
 					n: 'kick',
-					v: `${mgr.teammates[0].cmd.p[0] + 20} ${
-						mgr.teammates[0].cmd.p[1] - 45
-					}`,
+					v: `${mgr.teammates[0].p[0] + 30} 
+					${mgr.teammates[0].p[1] - 70}`,
 				}
 			},
 			next: 'sendCommand',
@@ -624,7 +620,7 @@ const DT = {
 		},
 		runToGoal: {
 			exec(mgr, state) {
-				state.command = { n: 'dash', v: 80 }
+				state.command = { n: 'dash', v: 100 }
 			},
 			next: 'sendCommand',
 		},
@@ -664,7 +660,7 @@ const DT = {
 	bolvan: {
 		init() {
 			this.state = {
-				kickDone: false,
+				// kickDone: false,
 				next: 0,
 				increaseNext() {
 					this.next = (this.next + 1) % this.sequence.length
