@@ -14,4 +14,6 @@ function calculatePosition(x1, y1, d1, x2, y2, d2, x3, y3, d3) {
 	return [X, Y]
 }
 
-module.exports = { calculatePosition }
+module.exports = {
+	calculatePosition,
+}

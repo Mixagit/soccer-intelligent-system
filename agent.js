@@ -1,39 +1,21 @@
 const Msg = require('./msg')
-const readline = require('readline')
 
-const Manager = require('./manager')
-const { DT } = require('./decisionTree')
+const Manager = require('./tmanager')
+const TA = require('./tmachine')
 
 class Agent {
-	constructor(team, coords, role, isLeader = false) {
+	constructor(team, coords, role) {
 		this.position = 'l' // По умолчанию ~ левая половина поля
 		this.run = false // Игра начата
 		this.act = null // Действия
-		this.rl = readline.createInterface({
-			// Чтение консоли
-			input: process.stdin,
-			output: process.stdout,
-		})
+
 		this.x = coords[0]
-		this.y =  coords[1]
-		// this.leadershipDefined = false
-		this.isLeader = isLeader
+		this.y = coords[1]
+
 		this.team = team
 		this.didHearGo = false
 		this.role = role
 		this.indexOfAct = 0
-
-		this.rl.on('line', input => {
-			// Обработка строки из кон—
-			if (this.run) {
-				// Если игра начата
-				// Движения вперед, вправо, влево, удар по мячу
-				if ('w' == input) this.act = { n: 'dash', v: 100 }
-				if ('d' == input) this.act = { n: 'turn', v: 20 }
-				if ('a' == input) this.act = { n: 'turn', v: -20 }
-				if ('s' == input) this.act = { n: 'kick', v: 100 }
-			}
-		})
 	}
 	msgGot(msg) {
 		// Получение сообщения
@@ -52,9 +34,8 @@ class Agent {
 	processMsg(msg) {
 		// Обработка сообщения
 		let data = Msg.parseMsg(msg) // Разбор сообщения
+		let goal = false
 
-		let goal = false;
-		
 		if (!data) throw new Error('Parse error\n' + msg)
 		// Первое (hear) — начало игры
 		if (data.cmd == 'hear' && data.p[2] == 'play_on') this.run = true
@@ -65,32 +46,21 @@ class Agent {
 	initAgent(p) {
 		if (p[0] == 'r') this.position = 'r' // Правая половина поля
 		if (p[1]) this.id = p[1] // id игрока
-		this.dt = Object.create(DT[this.role]).init()
+		this.mgr = Object.create(Manager).init(this.team, this.position)
+		this.ta = Object.create(TA[this.role]).init()
 	}
 	async analyzeEnv(msg, cmd, p, goal) {
-		const mgr = Object.create(Manager).init(cmd, p, this.team, this.x, this.y)
-		mgr.isLeader = this.isLeader
-		mgr.didHearGo = this.didHearGo
-		if (mgr.stopRunning()) {
-			this.dt.state.kickDone = false
-			this.dt.state.didHearGo = false
-			this.didHearGo = false
+		if (!this.run) return
+		if (goal) {
 			this.run = false
-			this.dt.state.next = 0
-			if (this.strat == 'passer') await this.socketSend('move', '-20 0')
-			if (this.strat == 'goaler') await this.socketSend('move', '-20 -20')
+			if (this.role == 'player') await this.socketSend('move', '-20 0')
+			if (this.role == 'goalie') await this.socketSend('move', '-30 0')
 		}
 
-		if (cmd == 'see') {
-			const pos = mgr.getLocation()
-			;[this.x, this.y] = [pos.x, pos.y]
-			const teammate = mgr.getTeamLocationFirstPlayer()
-			const opponent = mgr.getTeamLocationFirstPlayer(false)
-
-			//console.log('this.isLeader', this.isLeader)
-			//console.log('this.pos', pos)
-
-			if (this.run) this.act = mgr.getAction(this.dt)
+		if (cmd === 'hear') this.mgr.setHear(p)
+		if (cmd === 'see') {
+			this.act = this.mgr.getAction(p, this.ta)
+			// if (this.position === 'r') console.log(this.act);
 		}
 	}
 
