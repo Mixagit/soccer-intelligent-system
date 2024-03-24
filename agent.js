@@ -1,21 +1,28 @@
 const Msg = require('./msg')
-
-const Manager = require('./tmanager')
-const TA = require('./tmachine')
+const getControllers = require('./controllers')
 
 class Agent {
-	constructor(team, coords, role) {
+	constructor(
+		team,
+		coords,
+		strat = 'player',
+		flag = null,
+		isLeader = false,
+		followSide = null
+	) {
 		this.position = 'l' // По умолчанию ~ левая половина поля
 		this.run = false // Игра начата
 		this.act = null // Действия
-
+		this.bodyAngle = 0
 		this.x = coords[0]
 		this.y = coords[1]
-
+		this.leadershipDefined = false
+		this.isLeader = isLeader
+		this.flag = flag
 		this.team = team
-		this.didHearGo = false
-		this.role = role
-		this.indexOfAct = 0
+		this.strat = strat
+		this.defaultPos = coords
+		this.followSide = followSide
 	}
 	msgGot(msg) {
 		// Получение сообщения
@@ -41,29 +48,37 @@ class Agent {
 		if (data.cmd == 'hear' && data.p[2] == 'play_on') this.run = true
 		if (data.cmd == 'init') this.initAgent(data.p) // Инициализация
 		if (data.cmd == 'hear' && data.p[2] == '"go"') this.didHearGo = true
+		if (data.cmd == 'hear' && data.p[2].includes('goal')) goal = true
 		this.analyzeEnv(data.msg, data.cmd, data.p, goal) // Обработка
 	}
 	initAgent(p) {
 		if (p[0] == 'r') this.position = 'r' // Правая половина поля
 		if (p[1]) this.id = p[1] // id игрока
-		this.mgr = Object.create(Manager).init(this.team, this.position)
-		this.ta = Object.create(TA[this.role]).init()
+		this.setControllers()
+	}
+	setControllers() {
+		this.controllers = getControllers(this.strat)
+		this.controllers[0].setTaken(this.team, this.position, this.isLeader)
+		if (this.strat === 'bouncer') this.controllers[1].setFlag(this.flag, 10)
+		if (this.strat === 'follower') this.controllers[1].setPos(this.followSide)
 	}
 	async analyzeEnv(msg, cmd, p, goal) {
 		if (!this.run) return
 		if (goal) {
 			this.run = false
-			if (this.role == 'player') await this.socketSend('move', '-20 0')
-			if (this.role == 'goalie') await this.socketSend('move', '-30 0')
+			await this.socketSend(
+				'move',
+				this.position === 'l'
+					? `${this.defaultPos[0]} ${this.defaultPos[1]}`
+					: `${-this.defaultPos[0]} ${-this.defaultPos[1]}`
+			)
+			this.setControllers()
 		}
 
-		if (cmd === 'hear') this.mgr.setHear(p)
-		if (cmd === 'see') {
-			this.act = this.mgr.getAction(p, this.ta)
-			// if (this.position === 'r') console.log(this.act);
-		}
+		if (cmd === 'hear') this.controllers[0].setHear(p)
+		if (cmd === 'see')
+			this.act = this.controllers[0].execute(p, this.controllers.slice(1))
 	}
-
 	sendCmd() {
 		if (this.run) {
 			// Игра начата
